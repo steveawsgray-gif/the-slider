@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>The Slider</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #eceef0;
+        --card: #ffffff;
+        --card-2: #f6f7f8;
+        --ink: #16191d;
+        --muted: #5a636d;
+        --line: #d5d9de;
+        --accent: #d97e06;
+        --accent-ink: #9a5800;
+        --accent-soft: rgba(217, 126, 6, 0.12);
+        --node-fill: #ffffff;
+        --conn: #98a2ad;
+        --track: #d8dce1;
+        --shadow: 0 1px 2px rgba(20, 25, 30, 0.06), 0 10px 30px rgba(20, 25, 30, 0.07);
+        --c-source: #64798e;
+        --c-entry: #0e7c86;
+        --c-core: #d97e06;
+        --c-people: #2e8b5f;
+        --c-ai: #1d87a8;
+        --c-plat: #8a7f63;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0a0e13;
+          --card: #11161d;
+          --card-2: #161d26;
+          --ink: #eef1f4;
+          --muted: #9aa6b2;
+          --line: #26313d;
+          --accent: #f5a623;
+          --accent-ink: #f5a623;
+          --accent-soft: rgba(245, 166, 35, 0.13);
+          --node-fill: #151c25;
+          --conn: #5b6b7a;
+          --track: #2a343f;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(0, 0, 0, 0.35);
+          --c-source: #8fa5ba;
+          --c-entry: #2fc4cf;
+          --c-core: #f5a623;
+          --c-people: #4fce8f;
+          --c-ai: #4cc3e6;
+          --c-plat: #c2b28c;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+      .wrap { max-width: 1280px; margin: 0 auto; padding: 28px 20px 56px; }
+
+      /* ---------- header ---------- */
+      header { max-width: 880px; }
+      h1 {
+        font-size: clamp(30px, 4.6vw, 46px);
+        line-height: 1.08;
+        font-weight: 800;
+        letter-spacing: -0.015em;
+        margin: 0 0 12px;
+      }
+      .lede { font-size: clamp(15.5px, 2vw, 18px); color: var(--muted); margin: 0; max-width: 760px; }
+      .lede strong { color: var(--ink); font-weight: 600; }
+
+      /* ---------- layout ---------- */
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 348px;
+        gap: 18px;
+        margin-top: 26px;
+        align-items: start;
+      }
+      @media (max-width: 1020px) { .layout { grid-template-columns: 1fr; } }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+      }
+
+      /* ---------- diagram ---------- */
+      .diagram-card { padding: 10px 6px 12px; overflow: hidden; }
+      .diagram-scroll { overflow-x: auto; scrollbar-width: thin; }
+      svg#diagram { display: block; width: 100%; min-width: 780px; height: auto; }
+      .legend {
+        display: flex; flex-wrap: wrap; gap: 6px 18px;
+        padding: 10px 14px 2px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+        color: var(--muted);
+      }
+      .legend span { display: inline-flex; align-items: center; gap: 7px; min-height: 24px; }
+      .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+      /* SVG nodes + connectors */
+      .node { opacity: 0; transform: translateY(10px); transition: opacity 0.45s ease, transform 0.45s ease; pointer-events: none; }
+      .node.on { opacity: 1; transform: translateY(0); }
+      .node rect.bg { fill: var(--node-fill); stroke-width: 1.6; rx: 12; }
+      .node text { text-anchor: middle; }
+      .node .tag { font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; }
+      .node .ttl { font-family: "Archivo", sans-serif; font-size: 16.5px; font-weight: 700; fill: var(--ink); }
+      .node .sub { font-family: "Archivo", sans-serif; font-size: 11.5px; fill: var(--muted); }
+      .cat-source rect.bg { stroke: var(--c-source); } .cat-source .tag { fill: var(--c-source); }
+      .cat-entry  rect.bg { stroke: var(--c-entry); }  .cat-entry  .tag { fill: var(--c-entry); }
+      .cat-core   rect.bg { stroke: var(--c-core); }   .cat-core   .tag { fill: var(--c-core); }
+      .cat-people rect.bg { stroke: var(--c-people); } .cat-people .tag { fill: var(--c-people); }
+      .cat-ai     rect.bg { stroke: var(--c-ai); }     .cat-ai     .tag { fill: var(--c-ai); }
+      .cat-plat   rect.bg { stroke: var(--c-plat); }   .cat-plat   .tag { fill: var(--c-plat); }
+      .node.fresh { animation: freshPulse 1.5s ease-out; }
+      @keyframes freshPulse {
+        0% { filter: drop-shadow(0 0 0 rgba(245, 166, 35, 0)); }
+        35% { filter: drop-shadow(0 0 9px rgba(245, 166, 35, 0.85)); }
+        100% { filter: drop-shadow(0 0 0 rgba(245, 166, 35, 0)); }
+      }
+      .conn { fill: none; stroke: var(--conn); stroke-width: 2; opacity: 0; transition: opacity 0.45s ease; }
+      .conn.on { opacity: 0.95; }
+      .conn.dashed { stroke-dasharray: 5 5; }
+      .conn-label { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; fill: var(--muted); opacity: 0; transition: opacity 0.45s ease; }
+      .conn-label.on { opacity: 1; }
+      .band-rect { fill: none; stroke: var(--line); stroke-width: 1.4; stroke-dasharray: 6 6; }
+      .band-label { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.16em; fill: var(--muted); }
+
+      /* ---------- stage panel ---------- */
+      .panel { padding: 22px 22px 20px; position: sticky; top: 16px; }
+      @media (max-width: 1020px) { .panel { position: static; } }
+      .panel.swap .panel-inner { animation: panelIn 0.35s ease; }
+      @keyframes panelIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+      .kicker {
+        font-family: "IBM Plex Mono", monospace; font-size: 11.5px; font-weight: 600;
+        letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-ink);
+        display: flex; justify-content: space-between; gap: 10px;
+      }
+      .kicker .era { color: var(--muted); letter-spacing: 0.08em; }
+      .panel h2 { font-size: 25px; line-height: 1.15; font-weight: 800; letter-spacing: -0.01em; margin: 8px 0 8px; }
+      .panel p.desc { margin: 0 0 16px; color: var(--muted); font-size: 15px; }
+      .added-head {
+        font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+        letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px;
+      }
+      ul.added { list-style: none; margin: 0 0 18px; padding: 0; }
+      ul.added li {
+        display: flex; gap: 9px; align-items: baseline;
+        padding: 6px 0; border-top: 1px solid var(--line); font-size: 14.5px; font-weight: 500;
+      }
+      ul.added li:first-child { border-top: none; }
+      ul.added li::before { content: "+"; font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--accent-ink); }
+      .stat { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 2px; }
+      .stat-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+      .stat-row .lab { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+      .stat-row .val { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 14px; }
+      .bar { height: 8px; border-radius: 99px; background: var(--track); margin: 8px 0 14px; overflow: hidden; }
+      .bar i { display: block; height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.55s ease; }
+      .human-role { font-size: 14.5px; }
+      .human-role .lab {
+        display: block; font-family: "IBM Plex Mono", monospace; font-size: 11px;
+        letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
+      }
+
+      /* ---------- slider dock ---------- */
+      .dock { margin-top: 18px; padding: 18px 20px 16px; }
+      .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+      .pill {
+        font-family: inherit; font-size: 13.5px; font-weight: 600;
+        padding: 8px 14px; min-height: 38px;
+        border-radius: 99px; border: 1.5px solid var(--line);
+        background: var(--card-2); color: var(--muted); cursor: pointer;
+        transition: border-color 0.2s, color 0.2s, background 0.2s;
+      }
+      .pill:hover { border-color: var(--accent); color: var(--ink); }
+      .pill.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+      .pill .n { font-family: "IBM Plex Mono", monospace; font-size: 11px; margin-right: 6px; opacity: 0.75; }
+      .slider-row { display: flex; align-items: center; gap: 12px; }
+      .ctl {
+        flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%;
+        border: 1.5px solid var(--line); background: var(--card-2); color: var(--ink);
+        font-size: 16px; cursor: pointer; display: grid; place-items: center;
+        transition: border-color 0.2s, background 0.2s;
+      }
+      .ctl:hover:not(:disabled) { border-color: var(--accent); }
+      .ctl:disabled { opacity: 0.35; cursor: default; }
+      .ctl.play { width: auto; border-radius: 99px; padding: 0 18px; font-size: 13.5px; font-weight: 700; font-family: inherit; gap: 7px; display: inline-flex; align-items: center; }
+      input[type="range"] {
+        -webkit-appearance: none; appearance: none;
+        flex: 1 1 auto; min-width: 0; height: 46px; background: transparent; cursor: pointer; margin: 0;
+        --p: 0%;
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 8px; border-radius: 99px;
+        background: linear-gradient(90deg, var(--accent) var(--p), var(--track) var(--p));
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none;
+        width: 30px; height: 30px; border-radius: 50%; margin-top: -11px;
+        background: var(--card); border: 3px solid var(--accent);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      }
+      input[type="range"]::-moz-range-track { height: 8px; border-radius: 99px; background: var(--track); }
+      input[type="range"]::-moz-range-progress { height: 8px; border-radius: 99px; background: var(--accent); }
+      input[type="range"]::-moz-range-thumb {
+        width: 24px; height: 24px; border-radius: 50%;
+        background: var(--card); border: 3px solid var(--accent);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      }
+      .end-labels {
+        display: flex; justify-content: space-between; margin-top: 2px;
+        font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em;
+        text-transform: uppercase; color: var(--muted);
+      }
+
+      /* ---------- why section ---------- */
+      .why { margin-top: 34px; }
+      .why h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 14px; }
+      .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      @media (max-width: 860px) { .why-grid { grid-template-columns: 1fr; } }
+      .why .card { padding: 20px; }
+      .why h3 { font-size: 16.5px; font-weight: 700; margin: 0 0 7px; }
+      .why p { margin: 0; color: var(--muted); font-size: 14.5px; }
+      .closing {
+        margin-top: 18px; padding: 18px 20px;
+        border: 1.5px solid var(--accent); border-radius: 14px; background: var(--accent-soft);
+        font-size: 16px; font-weight: 600; line-height: 1.45;
+      }
+      .closing span { color: var(--accent-ink); }
+
+      @media (prefers-reduced-motion: reduce) {
+        .node, .conn, .conn-label, .bar i, .panel.swap .panel-inner { transition: none; animation: none; }
+        .node.fresh { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>The contact centre, on a slider.</h1>
+        <p class="lede">
+          Picture one product with a slider underneath it. At the far left, a <strong>basic voice ACD</strong>.
+          Slide right and the architecture grows — other media, skills, basic AI, agentic AI1, and finally
+          <strong>full-blown AI2 in 2028–29</strong>: specialised agents by skill, backed up by rare human resources.
+        </p>
+      </header>
+
+      <div class="layout">
+        <div class="card diagram-card">
+          <div class="diagram-scroll">
+            <svg id="diagram" viewBox="0 0 1000 640" role="img" aria-label="Contact centre architecture diagram that grows as the slider moves"></svg>
+          </div>
+          <div class="legend" aria-hidden="true">
+            <span><i style="background:var(--c-source)"></i>Contacts</span>
+            <span><i style="background:var(--c-entry)"></i>Entry</span>
+            <span><i style="background:var(--c-core)"></i>Routing core</span>
+            <span><i style="background:var(--c-people)"></i>People</span>
+            <span><i style="background:var(--c-ai)"></i>AI agents</span>
+            <span><i style="background:var(--c-plat)"></i>Platform</span>
+          </div>
+        </div>
+
+        <aside class="card panel" id="panel" aria-live="polite">
+          <div class="panel-inner">
+            <div class="kicker"><span id="p-kicker">Stage 1 of 7</span><span class="era" id="p-era"></span></div>
+            <h2 id="p-title"></h2>
+            <p class="desc" id="p-desc"></p>
+            <p class="added-head" id="p-added-head">Added at this stage</p>
+            <ul class="added" id="p-added"></ul>
+            <div class="stat">
+              <div class="stat-row"><span class="lab">Contacts handled by AI</span><span class="val" id="p-ai-val">0%</span></div>
+              <div class="bar"><i id="p-ai-bar" style="width:0%"></i></div>
+              <div class="human-role"><span class="lab">The human role</span><span id="p-human"></span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="card dock">
+        <div class="pills" id="pills" role="group" aria-label="Jump to a stage"></div>
+        <div class="slider-row">
+          <button class="ctl" id="btn-prev" aria-label="Previous stage">&#8592;</button>
+          <button class="ctl play" id="btn-play" aria-label="Play the stages">&#9654;&nbsp;Play</button>
+          <input type="range" id="slider" min="0" max="6" step="1" value="0" aria-label="Architecture stage" />
+          <button class="ctl" id="btn-next" aria-label="Next stage">&#8594;</button>
+        </div>
+        <div class="end-labels"><span>Basic voice ACD</span><span>Full AI2 · 2028–29</span></div>
+      </div>
+
+      <section class="why">
+        <h2>Why this shape</h2>
+        <div class="why-grid">
+          <div class="card">
+            <h3>Built for small, sophisticated sites</h3>
+            <p>The Toshiba lesson: over 5,000 OEM sites worldwide, averaging under 20 agents — but with skills
+               routing and real sophistication. A tidy agentic package that installs quick fits exactly that shape of site.</p>
+          </div>
+          <div class="card">
+            <h3>Humans get rarer, not replaced</h3>
+            <p>As the slider moves right, agents absorb the routine volume. People concentrate where they are
+               scarcest and best: exceptions, empathy, and judgment — the backup, not the front line.</p>
+          </div>
+          <div class="card">
+            <h3>The market opening</h3>
+            <p>The CCaaS space is crowded and getting completely twisted up with AI1. AI2 wipes the board clean —
+               legacy, UCaaS and AI1 alike. A slider product rides that transition instead of fighting it.</p>
+          </div>
+        </div>
+        <div class="closing">
+          Run lean: <span>build and market it with no other employees required.</span>
+          Sites start where they are, slide up when they&rsquo;re ready — and the recurring revenue builds with every stage.
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var SVGNS = "http://www.w3.org/2000/svg";
+        var svg = document.getElementById("diagram");
+
+        /* ---------- diagram spec ----------
+           Each text field is a list of [fromStage, text] variants; the last
+           variant whose stage has been reached is shown. */
+        var NODES = [
+          { id: "voice", cat: "source", x: 120, y: 110, w: 180, h: 84, min: 0,
+            tag: [[0, "CONTACT"]],
+            ttl: [[0, "Voice callers"]],
+            sub: [[0, "Phone calls only"]] },
+          { id: "digital", cat: "source", x: 120, y: 258, w: 180, h: 84, min: 1,
+            tag: [[1, "CONTACT"]],
+            ttl: [[1, "Digital channels"]],
+            sub: [[1, "Chat · Email · SMS · Social"]] },
+          { id: "self", cat: "source", x: 120, y: 406, w: 180, h: 84, min: 3,
+            tag: [[3, "OUTCOME"]],
+            ttl: [[3, "Self-service"]],
+            sub: [[3, "Resolved without an agent"]] },
+          { id: "gw", cat: "entry", x: 350, y: 110, w: 190, h: 84, min: 0,
+            tag: [[0, "ENTRY"]],
+            ttl: [[0, "Gateway"]],
+            sub: [[0, "PSTN / SIP trunk"], [1, "Voice + digital ingress"]] },
+          { id: "frontdoor", cat: "entry", x: 350, y: 258, w: 190, h: 84, min: 3,
+            tag: [[3, "AI ENTRY"]],
+            ttl: [[3, "AI front door"]],
+            sub: [[3, "Bot + IVR take the routine"]] },
+          { id: "router", cat: "core", x: 580, y: 110, w: 200, h: 84, min: 0,
+            tag: [[0, "ROUTING CORE"]],
+            ttl: [[0, "ACD router"], [1, "Omnichannel router"], [2, "Skills-based router"]],
+            sub: [[0, "One queue, next agent up"], [2, "Best match, not next in line"]] },
+          { id: "skills", cat: "core", x: 580, y: 258, w: 200, h: 84, min: 2,
+            tag: [[2, "ROUTING CORE"]],
+            ttl: [[2, "Skills engine"]],
+            sub: [[2, "Skill levels, kept current"]] },
+          { id: "orch", cat: "core", x: 580, y: 406, w: 200, h: 84, min: 4,
+            tag: [[4, "ORCHESTRATION"], [6, "AI2 MESH"]],
+            ttl: [[4, "Agent orchestrator"], [6, "Self-organizing mesh"]],
+            sub: [[4, "Assigns & supervises AI agents"], [6, "Agents supervise agents"]] },
+          { id: "humans", cat: "people", x: 830, y: 110, w: 230, h: 84, min: 0,
+            tag: [[0, "PEOPLE"]],
+            ttl: [[0, "Agent pool"], [2, "Skill groups"], [5, "Human agents"]],
+            sub: [[0, "People answer everything"], [2, "Sales · Support · Billing groups"],
+                  [3, "AI assists on every call"], [5, "Complex & sensitive work only"],
+                  [6, "On call for oversight"]] },
+          { id: "aiagents", cat: "ai", x: 830, y: 258, w: 230, h: 84, min: 4,
+            tag: [[4, "AI AGENTS"]],
+            ttl: [[4, "First AI agents"], [5, "Agents by skill"]],
+            sub: [[4, "FAQ · Bookings · Status checks"], [5, "Billing · Tech · Sales · Retention"],
+                  [6, "Full autonomy, by skill"]] },
+          { id: "experts", cat: "people", x: 830, y: 406, w: 230, h: 84, min: 5,
+            tag: [[5, "PEOPLE"]],
+            ttl: [[5, "Rare human experts"]],
+            sub: [[5, "Exceptions · empathy · judgment"], [6, "The rarest resource of all"]] },
+          { id: "report", cat: "plat", x: 130, y: 560, w: 220, h: 72, min: 0,
+            tag: [[0, "PLATFORM"]],
+            ttl: [[0, "Reporting"]],
+            sub: [[0, "Call stats & wallboards"], [3, "Real-time analytics & QA"]] },
+          { id: "crm", cat: "plat", x: 380, y: 560, w: 220, h: 72, min: 1,
+            tag: [[1, "PLATFORM"]],
+            ttl: [[1, "CRM & context"]],
+            sub: [[1, "One record, every channel"]] },
+          { id: "kb", cat: "plat", x: 630, y: 560, w: 220, h: 72, min: 3,
+            tag: [[3, "PLATFORM"]],
+            ttl: [[3, "Knowledge base"]],
+            sub: [[3, "Grounds every AI answer"]] },
+          { id: "learn", cat: "plat", x: 880, y: 560, w: 220, h: 72, min: 6,
+            tag: [[6, "PLATFORM"]],
+            ttl: [[6, "Self-learning"]],
+            sub: [[6, "The system improves itself"]] }
+        ];
+
+        var CONNS = [
+          { d: "M210 110 H247", min: 0 },
+          { d: "M445 110 H472", min: 0, max: 2 },
+          { d: "M350 152 V208", min: 3 },
+          { d: "M445 258 H466 V160", min: 3 },
+          { d: "M120 210 V36 H548 V60", min: 1, max: 2 },
+          { d: "M210 258 H247", min: 3 },
+          { d: "M680 110 H707", min: 0, max: 1 },
+          { d: "M580 152 V208", min: 2 },
+          { d: "M680 258 H700 V110 H707", min: 2 },
+          { d: "M315 300 V340 H120 V356", min: 3 },
+          { d: "M580 300 V356", min: 4 },
+          { d: "M680 406 H760 V306", min: 4 },
+          { d: "M680 406 H707", min: 5 },
+          { d: "M830 300 V356", min: 5, dashed: true, label: "escalates", lx: 842, ly: 334 },
+          { d: "M636 448 C 720 486 800 500 856 518", min: 6, dashed: true }
+        ];
+
+        /* ---------- build SVG ---------- */
+        var defs = document.createElementNS(SVGNS, "defs");
+        defs.innerHTML =
+          '<marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+          '<path d="M0 0 L10 5 L0 10 z" fill="var(--conn)"></path></marker>';
+        svg.appendChild(defs);
+
+        var band = document.createElementNS(SVGNS, "rect");
+        band.setAttribute("x", 20); band.setAttribute("y", 514);
+        band.setAttribute("width", 960); band.setAttribute("height", 88);
+        band.setAttribute("rx", 14); band.setAttribute("class", "band-rect");
+        svg.appendChild(band);
+        var bandLabel = document.createElementNS(SVGNS, "text");
+        bandLabel.setAttribute("x", 34); bandLabel.setAttribute("y", 502);
+        bandLabel.setAttribute("class", "band-label");
+        bandLabel.textContent = "PLATFORM LAYER";
+        svg.appendChild(bandLabel);
+
+        var connEls = CONNS.map(function (c) {
+          var g = document.createElementNS(SVGNS, "g");
+          var p = document.createElementNS(SVGNS, "path");
+          p.setAttribute("d", c.d);
+          p.setAttribute("class", "conn" + (c.dashed ? " dashed" : ""));
+          p.setAttribute("marker-end", "url(#arrow)");
+          g.appendChild(p);
+          var lab = null;
+          if (c.label) {
+            lab = document.createElementNS(SVGNS, "text");
+            lab.setAttribute("x", c.lx); lab.setAttribute("y", c.ly);
+            lab.setAttribute("class", "conn-label");
+            lab.textContent = c.label;
+            g.appendChild(lab);
+          }
+          svg.appendChild(g);
+          return { spec: c, path: p, label: lab };
+        });
+
+        var nodeEls = {};
+        NODES.forEach(function (n) {
+          var g = document.createElementNS(SVGNS, "g");
+          g.setAttribute("class", "node cat-" + n.cat);
+          var r = document.createElementNS(SVGNS, "rect");
+          r.setAttribute("x", n.x - n.w / 2); r.setAttribute("y", n.y - n.h / 2);
+          r.setAttribute("width", n.w); r.setAttribute("height", n.h);
+          r.setAttribute("rx", 12); r.setAttribute("class", "bg");
+          g.appendChild(r);
+          function mkText(cls, dy) {
+            var t = document.createElementNS(SVGNS, "text");
+            t.setAttribute("x", n.x); t.setAttribute("y", n.y + dy);
+            t.setAttribute("class", cls);
+            g.appendChild(t);
+            return t;
+          }
+          var tag = mkText("tag", -22), ttl = mkText("ttl", 5), sub = mkText("sub", 26);
+          svg.appendChild(g);
+          nodeEls[n.id] = { spec: n, g: g, tag: tag, ttl: ttl, sub: sub };
+        });
+
+        function pickVariant(variants, stage) {
+          var out = variants[0][1];
+          for (var i = 0; i < variants.length; i++) {
+            if (variants[i][0] <= stage) out = variants[i][1];
+          }
+          return out;
+        }
+
+        /* ---------- stage content ---------- */
+        var STAGES = [
+          { name: "Basic Voice ACD", short: "Voice ACD", era: "Where every site starts",
+            desc: "One channel: the phone. Calls land in a single queue and the next free agent takes the next call. Simple, proven — and enough for a small site on day one.",
+            added: ["ACD router & queue", "Agent pool", "Call reporting"],
+            ai: 0, human: "Everyone, on every call." },
+          { name: "Omnichannel", short: "Omnichannel", era: "More ways in",
+            desc: "Chat, email, SMS and social join voice at one front door. The customer picks the channel; the site sees one conversation and one customer record.",
+            added: ["Digital channels", "Unified gateway", "CRM & customer context"],
+            ai: 5, human: "Everyone, on every channel." },
+          { name: "Skills-Based Routing", short: "Skills", era: "The Toshiba shape",
+            desc: "Every contact is matched to the person with the right skill, language and proficiency — not just the next in line. Small sites ran exactly this shape for years: under 20 agents, but sophisticated.",
+            added: ["Skills engine", "Skill groups", "Proficiency matching"],
+            ai: 10, human: "Grouped by skill — Sales, Support, Billing." },
+          { name: "Basic AI", short: "Basic AI", era: "AI lends a hand",
+            desc: "A bot and smart IVR take the routine questions at the front door, the knowledge base grounds the answers, and AI assists the agents who stay — summaries, sentiment, next steps.",
+            added: ["AI front door", "Self-service resolution", "Knowledge base", "Real-time analytics & QA"],
+            ai: 35, human: "Assisted by AI on every call." },
+          { name: "Agentic AI1 — First Agents", short: "AI1 · First", era: "Agents do whole jobs",
+            desc: "The first true agents arrive. An orchestrator hands them complete tasks — FAQs, bookings, status checks — and they finish the job end to end, not just suggest an answer.",
+            added: ["Agent orchestrator", "First AI agents", "Task-level handoff from the queue"],
+            ai: 60, human: "Handle what the agents escalate." },
+          { name: "Agentic AI1 — Full", short: "AI1 · Full", era: "Specialised by skill",
+            desc: "A specialised agent for every skill — billing, tech, sales, retention — each one backed up by rare human experts who take only the exceptions, the sensitive cases, and the moments that need judgment.",
+            added: ["Specialised agents by skill", "Rare human experts", "A clean escalation path"],
+            ai: 85, human: "Exceptions and sensitive cases only." },
+          { name: "AI2 — Full Autonomy", short: "AI2 · 2028–29", era: "2028–2029",
+            desc: "The mesh runs itself: agents recruit, supervise and improve other agents, learning continuously from every contact. Humans remain — rare, expert, on call for oversight. This is the stage that resets the board for legacy, UCaaS and AI1 alike.",
+            added: ["Self-organizing agent mesh", "Continuous self-learning", "Human oversight, on call"],
+            ai: 97, human: "Oversight only — the rare experts." }
+        ];
+
+        /* ---------- controls ---------- */
+        var slider = document.getElementById("slider");
+        var pillsWrap = document.getElementById("pills");
+        var btnPrev = document.getElementById("btn-prev");
+        var btnNext = document.getElementById("btn-next");
+        var btnPlay = document.getElementById("btn-play");
+        var panel = document.getElementById("panel");
+        var el = {
+          kicker: document.getElementById("p-kicker"),
+          era: document.getElementById("p-era"),
+          title: document.getElementById("p-title"),
+          desc: document.getElementById("p-desc"),
+          addedHead: document.getElementById("p-added-head"),
+          added: document.getElementById("p-added"),
+          aiVal: document.getElementById("p-ai-val"),
+          aiBar: document.getElementById("p-ai-bar"),
+          human: document.getElementById("p-human")
+        };
+
+        var pillBtns = STAGES.map(function (s, i) {
+          var b = document.createElement("button");
+          b.className = "pill";
+          b.innerHTML = '<span class="n">' + (i + 1) + "</span>" + s.short;
+          b.setAttribute("aria-label", "Stage " + (i + 1) + ": " + s.name);
+          b.addEventListener("click", function () { stopPlay(); setStage(i); });
+          pillsWrap.appendChild(b);
+          return b;
+        });
+
+        var stage = -1;
+        var timer = null;
+
+        function setStage(n) {
+          var prev = stage;
+          stage = Math.max(0, Math.min(STAGES.length - 1, n));
+
+          NODES.forEach(function (nd) {
+            var rec = nodeEls[nd.id];
+            var on = stage >= nd.min;
+            rec.g.classList.toggle("on", on);
+            if (on) {
+              rec.tag.textContent = pickVariant(nd.tag, stage);
+              rec.ttl.textContent = pickVariant(nd.ttl, stage);
+              rec.sub.textContent = pickVariant(nd.sub, stage);
+            }
+            rec.g.classList.remove("fresh");
+            if (on && prev >= 0 && stage > prev && nd.min === stage) {
+              void rec.g.getBoundingClientRect();
+              rec.g.classList.add("fresh");
+            }
+          });
+          connEls.forEach(function (c) {
+            var on = stage >= c.spec.min && (c.spec.max === undefined || stage <= c.spec.max);
+            c.path.classList.toggle("on", on);
+            if (c.label) c.label.classList.toggle("on", on);
+          });
+
+          var s = STAGES[stage];
+          el.kicker.textContent = "Stage " + (stage + 1) + " of " + STAGES.length;
+          el.era.textContent = s.era;
+          el.title.textContent = s.name;
+          el.desc.textContent = s.desc;
+          el.addedHead.textContent = stage === 0 ? "The starting point" : "Added at this stage";
+          el.added.innerHTML = "";
+          s.added.forEach(function (a) {
+            var li = document.createElement("li");
+            li.textContent = a;
+            el.added.appendChild(li);
+          });
+          el.aiVal.textContent = s.ai + "%";
+          el.aiBar.style.width = s.ai + "%";
+          el.human.textContent = s.human;
+
+          panel.classList.remove("swap");
+          void panel.offsetWidth;
+          panel.classList.add("swap");
+
+          slider.value = stage;
+          slider.style.setProperty("--p", (stage / (STAGES.length - 1)) * 100 + "%");
+          pillBtns.forEach(function (b, i) { b.classList.toggle("active", i === stage); });
+          btnPrev.disabled = stage === 0;
+          btnNext.disabled = stage === STAGES.length - 1;
+        }
+
+        function stopPlay() {
+          if (timer !== null) {
+            clearInterval(timer);
+            timer = null;
+            btnPlay.innerHTML = "&#9654;&nbsp;Play";
+            btnPlay.setAttribute("aria-label", "Play the stages");
+          }
+        }
+        btnPlay.addEventListener("click", function () {
+          if (timer !== null) { stopPlay(); return; }
+          if (stage >= STAGES.length - 1) setStage(0);
+          btnPlay.innerHTML = "&#10074;&#10074;&nbsp;Pause";
+          btnPlay.setAttribute("aria-label", "Pause");
+          timer = setInterval(function () {
+            if (stage >= STAGES.length - 1) { stopPlay(); return; }
+            setStage(stage + 1);
+          }, 4200);
+        });
+        btnPrev.addEventListener("click", function () { stopPlay(); setStage(stage - 1); });
+        btnNext.addEventListener("click", function () { stopPlay(); setStage(stage + 1); });
+        slider.addEventListener("input", function () { stopPlay(); setStage(parseInt(slider.value, 10)); });
+
+        setStage(0);
+      })();
+    </script>
+  </body>
+</html>
