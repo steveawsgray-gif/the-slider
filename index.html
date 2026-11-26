@@ -82,6 +82,15 @@
         margin: 14px 0 0;
       }
       .byline span { color: var(--muted); font-weight: 500; letter-spacing: 0.08em; }
+      .sound-toggle {
+        font-family: "IBM Plex Mono", monospace; font-size: 11.5px; font-weight: 600;
+        letter-spacing: 0.12em; text-transform: uppercase;
+        margin-top: 12px; padding: 7px 14px; border-radius: 99px;
+        border: 1.5px solid var(--line); background: var(--card-2); color: var(--muted);
+        cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s;
+      }
+      .sound-toggle:hover { border-color: var(--accent); color: var(--ink); }
+      .sound-toggle[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
       footer {
         margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--line);
         font-size: 13px; color: var(--muted);
@@ -283,6 +292,7 @@
           <strong>full-blown AI2 in 2028–29</strong>: specialised agents by skill, backed up by rare human resources.
         </p>
         <p class="byline">Created by Steven Gray <span>· Systems Analyst, AWS Architecture</span></p>
+        <button class="sound-toggle" id="btn-sound" aria-pressed="true">Sound: on</button>
       </header>
 
       <div class="layout">
@@ -357,6 +367,9 @@
         Thoughts, conceptualized.
       </footer>
     </div>
+
+    <audio id="music" src="audio/music.mp3" loop preload="auto"></audio>
+    <audio id="voice" preload="auto"></audio>
 
     <script>
       (function () {
@@ -589,13 +602,59 @@
           b.className = "pill";
           b.innerHTML = '<span class="n">' + (i + 1) + "</span>" + s.short;
           b.setAttribute("aria-label", "Stage " + (i + 1) + ": " + s.name);
-          b.addEventListener("click", function () { stopPlay(); setStage(i); });
+          b.addEventListener("click", function () { stopPlay(); setStage(i); narrateCurrent(); });
           pillsWrap.appendChild(b);
           return b;
         });
 
         var stage = -1;
         var timer = null;
+        var narrateTimer = null;
+
+        /* ---------- audio: voice-over + very light music bed ----------
+           Sound starts only after the visitor interacts (browser rule).
+           Each stage is narrated when reached; Play becomes a narrated
+           tour, advancing when each clip ends (4.2 s steps when muted). */
+        var soundOn = true;
+        var audioUnlocked = false;
+        var voiceFailed = false;
+        var music = document.getElementById("music");
+        var voice = document.getElementById("voice");
+        var btnSound = document.getElementById("btn-sound");
+        var playing = false;
+        var playNarrated = false;
+        music.volume = 0.6;
+
+        function unlockAudio() {
+          if (audioUnlocked) return;
+          audioUnlocked = true;
+          if (soundOn) { var p = music.play(); if (p && p.catch) p.catch(function () {}); }
+        }
+        ["pointerdown", "keydown"].forEach(function (evt) {
+          document.addEventListener(evt, unlockAudio, { once: true });
+        });
+
+        function playNarration(n) {
+          if (!soundOn || !audioUnlocked || voiceFailed) return;
+          try {
+            voice.pause();
+            voice.src = "audio/stage" + (n + 1) + ".mp3";
+            voice.load();
+            var p = voice.play();
+            if (p && p.catch) p.catch(function () {});
+          } catch (e) {}
+        }
+        function narrateCurrent() { playNarration(stage); }
+        voice.addEventListener("play", function () { music.volume = 0.25; });
+        voice.addEventListener("ended", function () {
+          music.volume = 0.6;
+          if (playing && playNarrated) advanceOrStop();
+        });
+        voice.addEventListener("pause", function () { music.volume = 0.6; });
+        voice.addEventListener("error", function () {
+          voiceFailed = true;
+          if (playing) armAdvance();
+        });
 
         function setStage(n) {
           var prev = stage;
@@ -649,27 +708,59 @@
           btnNext.disabled = stage === STAGES.length - 1;
         }
 
-        function stopPlay() {
-          if (timer !== null) {
-            clearInterval(timer);
-            timer = null;
-            btnPlay.innerHTML = "&#9654;&nbsp;Play";
-            btnPlay.setAttribute("aria-label", "Play the stages");
+        function clearPlayTimers() {
+          if (timer !== null) { clearTimeout(timer); timer = null; }
+          if (narrateTimer !== null) { clearTimeout(narrateTimer); narrateTimer = null; }
+        }
+        function armAdvance() {
+          clearPlayTimers();
+          if (soundOn && audioUnlocked && !voiceFailed) {
+            playNarrated = true;
+            playNarration(stage);
+            narrateTimer = setTimeout(function () { advanceOrStop(); }, 25000);
+          } else {
+            playNarrated = false;
+            timer = setTimeout(function () { advanceOrStop(); }, 4200);
           }
         }
+        function advanceOrStop() {
+          if (!playing) return;
+          if (stage >= STAGES.length - 1) { stopPlay(); return; }
+          setStage(stage + 1);
+          armAdvance();
+        }
+        function stopPlay() {
+          playing = false;
+          playNarrated = false;
+          clearPlayTimers();
+          try { voice.pause(); } catch (e) {}
+          btnPlay.innerHTML = "&#9654;&nbsp;Play";
+          btnPlay.setAttribute("aria-label", "Play the stages");
+        }
         btnPlay.addEventListener("click", function () {
-          if (timer !== null) { stopPlay(); return; }
+          unlockAudio();
+          if (playing) { stopPlay(); return; }
           if (stage >= STAGES.length - 1) setStage(0);
+          playing = true;
           btnPlay.innerHTML = "&#10074;&#10074;&nbsp;Pause";
           btnPlay.setAttribute("aria-label", "Pause");
-          timer = setInterval(function () {
-            if (stage >= STAGES.length - 1) { stopPlay(); return; }
-            setStage(stage + 1);
-          }, 4200);
+          armAdvance();
         });
-        btnPrev.addEventListener("click", function () { stopPlay(); setStage(stage - 1); });
-        btnNext.addEventListener("click", function () { stopPlay(); setStage(stage + 1); });
-        slider.addEventListener("input", function () { stopPlay(); setStage(parseInt(slider.value, 10)); });
+        btnPrev.addEventListener("click", function () { stopPlay(); setStage(stage - 1); narrateCurrent(); });
+        btnNext.addEventListener("click", function () { stopPlay(); setStage(stage + 1); narrateCurrent(); });
+        slider.addEventListener("input", function () { stopPlay(); setStage(parseInt(slider.value, 10)); narrateCurrent(); });
+        btnSound.addEventListener("click", function () {
+          soundOn = !soundOn;
+          btnSound.textContent = soundOn ? "Sound: on" : "Sound: off";
+          btnSound.setAttribute("aria-pressed", String(soundOn));
+          if (soundOn) {
+            unlockAudio();
+          } else {
+            try { voice.pause(); } catch (e) {}
+            try { music.pause(); } catch (e) {}
+          }
+          if (playing) armAdvance();
+        });
 
         setStage(0);
       })();
