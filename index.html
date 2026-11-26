@@ -63,7 +63,7 @@
         font-family: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
         line-height: 1.5;
       }
-      .wrap { max-width: 1280px; margin: 0 auto; padding: 28px 20px 56px; }
+      .wrap { max-width: 1280px; margin: 0 auto; padding: 22px 20px 56px; }
 
       /* ---------- header ---------- */
       header { max-width: 880px; }
@@ -79,14 +79,14 @@
       .byline {
         font-family: "IBM Plex Mono", monospace; font-size: 12.5px; font-weight: 600;
         letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-ink);
-        margin: 14px 0 0;
+        margin: 10px 0 0;
       }
       .byline span { color: var(--muted); font-weight: 500; letter-spacing: 0.08em; }
       .byline.presented { margin-top: 4px; color: var(--muted); }
       .sound-toggle {
         font-family: "IBM Plex Mono", monospace; font-size: 11.5px; font-weight: 600;
         letter-spacing: 0.12em; text-transform: uppercase;
-        margin-top: 12px; padding: 7px 14px; border-radius: 99px;
+        margin-top: 6px; padding: 6px 12px; border-radius: 99px;
         border: 1.5px solid var(--line); background: var(--card-2); color: var(--muted);
         cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s;
       }
@@ -103,7 +103,7 @@
         display: grid;
         grid-template-columns: minmax(0, 1fr) 348px;
         gap: 18px;
-        margin-top: 26px;
+        margin-top: 18px;
         align-items: start;
       }
       @media (max-width: 1020px) { .layout { grid-template-columns: 1fr; } }
@@ -119,6 +119,13 @@
       .diagram-card { padding: 10px 6px 12px; overflow: hidden; }
       .diagram-scroll { overflow-x: auto; scrollbar-width: thin; }
       svg#diagram { display: block; width: 100%; min-width: 780px; height: auto; }
+      /* On desktop, cap the diagram height so the whole player (header +
+         diagram + Play dock) fits on one screen at 100% zoom. The SVG
+         shrinks proportionally; phones are unaffected (single-column). */
+      @media (min-width: 1021px) {
+        h1 { font-size: 36px; }
+        svg#diagram { min-width: 0; margin: 0 auto; max-height: min(460px, max(300px, calc(100vh - 370px))); }
+      }
       .legend {
         display: flex; flex-wrap: wrap; gap: 6px 18px;
         padding: 10px 14px 2px;
@@ -202,7 +209,7 @@
       }
 
       /* ---------- slider dock ---------- */
-      .dock { margin-top: 18px; padding: 18px 20px 16px; }
+      .dock { margin-top: 12px; padding: 14px 20px 12px; }
       .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
       .pill {
         font-family: inherit; font-size: 13.5px; font-weight: 600;
