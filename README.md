@@ -6,4 +6,6 @@ Slide it right and the diagram grows: other media, skills, basic AI, agentic AI1
 
 **[Open the interactive player](https://steveawsgray-gif.github.io/the-slider/)**
 
+**[Watch the packet-flow version](https://steveawsgray-gif.github.io/the-slider/packet-flow.html)** — the same diagram with live packets streaming between the components.
+
 Steven Gray's thoughts, conceptualized. First in a series.
